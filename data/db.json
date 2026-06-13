@@ -1,4 +1,13 @@
 {
-  "users": [],
+  "users": [
+    {
+      "id": 1781323328954,
+      "email": "test@postman.com",
+      "password": "$2b$10$187xxNVOB2aFxcjEu44gv.BPV4w2TsU44GtYGWIYmpSHj.kMcP75e",
+      "name": "Postman User",
+      "role": "user",
+      "createdAt": "2026-06-13T04:02:08.954Z"
+    }
+  ],
   "tasks": []
 }
