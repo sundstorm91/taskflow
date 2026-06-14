@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { findUserByMail } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
+
+const JWT_SECRET = process.env.JWT_SECRET!
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { email, password } = body
 
-    // 1. Проверка, что поля заполнены
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email и пароль обязательны' },
@@ -15,7 +17,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 2. Поиск пользователя
     const user = findUserByMail(email)
     if (!user) {
       return NextResponse.json(
@@ -24,7 +25,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 3. Проверка пароля
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -33,14 +33,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Удаляем пароль из ответа
-    const { password: _, ...userWithoutPassword } = user
+    // Создаём JWT токен
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    )
 
-    // 5. Возвращаем пользователя
-    return NextResponse.json(
-      { user: userWithoutPassword, message: 'Вход выполнен успешно' },
+    // Устанавливаем httpOnly cookie
+    const response = NextResponse.json(
+      { user: { id: user.id, email: user.email, name: user.name, role: user.role }, message: 'Вход выполнен успешно' },
       { status: 200 }
     )
+
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 дней
+      path: '/',
+    })
+
+    return response
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(
