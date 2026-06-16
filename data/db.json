@@ -7,6 +7,14 @@
       "name": "Postman User",
       "role": "user",
       "createdAt": "2026-06-13T04:02:08.954Z"
+    },
+    {
+      "id": 1781627964092,
+      "email": "asd@mail.ru",
+      "password": "$2b$10$Ns6nSJeNH1GNjtEFvvuha.WzMKoR1FXYBqm7/jaHfAM64LwTu9BWm",
+      "name": "asd",
+      "role": "user",
+      "createdAt": "2026-06-16T16:39:24.092Z"
     }
   ],
   "tasks": []

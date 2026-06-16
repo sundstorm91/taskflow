@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
       await jwtVerify(token, secret);
       isValidToken = true;
     } catch (error) {
-      console.log('Token verification failed:', error.message);
+      /* console.log('Token verification failed:', error.message); */
       // Если токен невалиден, удаляем его из cookies
       const response = NextResponse.next();
       response.cookies.delete('token');
