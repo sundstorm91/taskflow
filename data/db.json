@@ -15,6 +15,14 @@
       "name": "asd",
       "role": "user",
       "createdAt": "2026-06-16T16:39:24.092Z"
+    },
+    {
+      "id": 1781628182220,
+      "email": "agar@aboba.ru",
+      "password": "$2b$10$w6GD/UVE9C2zZY7dO7Wp0uDtoc.mdMccTOl0hRws7/PhO4LNAO.0W",
+      "name": "agaragar",
+      "role": "user",
+      "createdAt": "2026-06-16T16:43:02.220Z"
     }
   ],
   "tasks": []
