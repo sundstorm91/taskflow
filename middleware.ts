@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
  /* Alert!  функция для получения секрета должна быть асинхронной и возвращать Uint8Array */
-function getJwtSecret() {
+export function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new Error('JWT_SECRET is not defined in environment variables');

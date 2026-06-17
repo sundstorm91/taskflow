@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { useUser } from '@/context/UserContext'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -15,9 +16,10 @@ export default function DashboardPage() {
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState<'pending' | 'in-progress' | 'completed'>('pending')
   const [deadline, setDeadline] = useState('')
+  const { user } = useUser()
 
   // TODO: получить реальный userId из контекста/токена
-  const userId = 1781323328954 // временно (заменить позже)
+  /* const userId = 1781323328954 */
 
   const handleLogout = async () => {
     try {
@@ -37,17 +39,18 @@ export default function DashboardPage() {
     setError('')
     setLoading(true)
 
-    // TODO: добавить логику создания задачи
-    console.log('Создаём задачу:', { title, description, status, deadline, userId })
+    const res = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description, status, deadline, userId: user?.id }),
+    })
 
-    // Заглушка
-    setTimeout(() => {
-      setLoading(false)
-      setTitle('')
-      setDescription('')
-      setStatus('pending')
-      setDeadline('')
-    }, 1000)
+    const data = res.json()
+
+    if (!res.ok) {
+      setError('Ошибка создания таски')
+      return
+    }
   }
 
   return (

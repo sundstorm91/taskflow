@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useRouter } from 'next/navigation'
+import { useUser } from '@/context/UserContext'
 
 export default function LoginPage() {
   // Состояния для полей формы и ошибок
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { setUser } = useUser()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,6 +37,7 @@ export default function LoginPage() {
       // Успешный вход
       console.log('Успех:', data.user)
 
+      setUser(data.user)
       router.push('/')
 
       // Вместо router.push('/')
