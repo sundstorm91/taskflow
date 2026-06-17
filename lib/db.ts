@@ -46,7 +46,6 @@ export function getUsers() {
 
 export function getTasks() {
     const db: DB = readDB();
-
     return db.tasks
 }
 
@@ -70,4 +69,17 @@ export function createUser(userData: Omit<User, 'id'  | 'role' | 'createdAt'>): 
   db.users.push(newUser)
   writeDB(db);
   return newUser;
+}
+
+export function createTask(taskData: Omit<Task, 'id' | 'createdAt'>): Task {
+    const db = readDB();
+    const newTask: Task = {
+        id: Date.now(),
+        ...taskData,
+        status: taskData.status || 'pending',
+        createdAt: new Date().toISOString(),
+    }
+    db.tasks.push(newTask)
+    writeDB(db)
+    return newTask;
 }

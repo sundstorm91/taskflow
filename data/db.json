@@ -23,6 +23,14 @@
       "name": "agaragar",
       "role": "user",
       "createdAt": "2026-06-16T16:43:02.220Z"
+    },
+    {
+      "id": 1781709026899,
+      "email": "dada@mail.ru",
+      "password": "$2b$10$0HzbNCtyqTx5Y8W3yDxbzO7ozh/fPB746BtlIdFiIrdKleu3Fpvmy",
+      "name": "expectmeorwhat",
+      "role": "user",
+      "createdAt": "2026-06-17T15:10:26.899Z"
     }
   ],
   "tasks": []
