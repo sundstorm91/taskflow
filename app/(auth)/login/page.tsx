@@ -38,6 +38,7 @@ export default function LoginPage() {
       console.log('Успех:', data.user)
 
       setUser(data.user)
+      localStorage.setItem('user', JSON.stringify(data.user))
       router.push('/')
 
       // Вместо router.push('/')

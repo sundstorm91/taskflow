@@ -21,7 +21,13 @@ const UserContext = createContext<UserContextType | undefined>(undefined)
 
 // Провайдер (обёртка для всего приложения)
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('user')
+      return stored ? JSON.parse(stored) : null
+    }
+    return null
+  })
 
   return <UserContext.Provider value={{ user, setUser }}>{children}</UserContext.Provider>
 }

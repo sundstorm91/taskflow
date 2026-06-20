@@ -1,15 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useUser } from '@/context/UserContext'
+import { Task } from '@/lib/db'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [tasks, setTasks] = useState<Task[]>([])
 
   // Состояния формы
   const [title, setTitle] = useState('')
@@ -17,9 +19,6 @@ export default function DashboardPage() {
   const [status, setStatus] = useState<'pending' | 'in-progress' | 'completed'>('pending')
   const [deadline, setDeadline] = useState('')
   const { user } = useUser()
-
-  // TODO: получить реальный userId из контекста/токена
-  /* const userId = 1781323328954 */
 
   const handleLogout = async () => {
     try {
@@ -37,21 +36,65 @@ export default function DashboardPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
+    setLoading(true) // ← включаем лоадер
 
-    const res = await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description, status, deadline, userId: user?.id }),
-    })
-
-    const data = res.json()
-
-    if (!res.ok) {
-      setError('Ошибка создания таски')
+    if (!user) {
+      setError('Пользователь не авторизован')
+      setLoading(false) // ← сбрасываем
       return
     }
+
+    const optimisticTask = {
+      id: Date.now(),
+      title,
+      description,
+      status,
+      deadline,
+      userId: user.id,
+      createdAt: new Date().toISOString(),
+    }
+
+    setTasks((prev) => [optimisticTask, ...prev])
+    setTitle('')
+    setDescription('')
+    setStatus('pending')
+    setDeadline('')
+
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description,
+          status,
+          deadline,
+          userId: user.id,
+        }),
+      })
+
+      if (!res.ok) {
+        setTasks((prev) => prev.filter((task) => task.id !== optimisticTask.id))
+        setError('Ошибка создания задачи')
+      }
+    } catch {
+      setTasks((prev) => prev.filter((task) => task.id !== optimisticTask.id))
+      setError('Ошибка соединения')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const fetchTasks = async () => {
+    const res = await fetch('/api/tasks')
+    const data = await res.json()
+    setTasks(data)
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchTasks()
+  }, [])
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -118,7 +161,30 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-xl font-semibold mb-4">Список задач</h2>
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <p className="text-gray-500">Здесь появится список задач</p>
+          {tasks.length === 0 ? (
+            <p className="text-gray-500">Задач пока нет</p>
+          ) : (
+            <ul className="space-y-4">
+              {tasks.map((task: Task) => (
+                <li key={task.id} className="border-b pb-3 last:border-0">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold">{task.title}</h3>
+                      {task.description && (
+                        <p className="text-sm text-gray-600">{task.description}</p>
+                      )}
+                    </div>
+                    <span className="text-xs px-2 py-1 rounded bg-gray-100">{task.status}</span>
+                  </div>
+                  {task.deadline && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Дедлайн: {new Date(task.deadline).toLocaleDateString()}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { getUserId } from '@/lib/auth'
-import { createTask, Task } from '@/lib/db'
+import { createTask, getTasks, Task } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -40,6 +40,29 @@ export async function POST(request: NextRequest) {
     console.error('add Task error', error)
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
+      { status: 500 }
+    )
+  }
+}
+
+
+export async function GET(request: NextRequest) {
+  const userId = await getUserId(request)
+
+  if (!userId) {
+    return NextResponse.json(
+      { error: 'Пользователь не авторизован' },
+      { status: 401}
+    )
+  }
+
+  try {
+    const tasks = getTasks().filter(task => task.userId === userId)
+    return NextResponse.json(tasks, { status: 200 })
+  } catch (error) {
+    console.error('GET tasks error:', error)
+    return NextResponse.json(
+      { error: 'Ошибка получения задач' },
       { status: 500 }
     )
   }
