@@ -36,21 +36,23 @@
   "tasks": [
     {
       "id": 1781719573220,
-      "title": "123",
-      "status": "in-progress",
+      "title": "222",
+      "status": "completed",
       "userId": 1781627964092,
       "deadline": "",
       "description": "ыыыы",
-      "createdAt": "2026-06-17T18:06:13.220Z"
+      "createdAt": "2026-06-17T18:06:13.220Z",
+      "updatedAt": "2026-06-21T07:04:28.919Z"
     },
     {
       "id": 1781791925043,
       "title": "Сходика туда",
-      "status": "pending",
+      "status": "completed",
       "userId": 1781627964092,
       "deadline": "2026-06-02",
-      "description": "",
-      "createdAt": "2026-06-18T14:12:05.043Z"
+      "description": "Ну че ты а",
+      "createdAt": "2026-06-18T14:12:05.043Z",
+      "updatedAt": "2026-06-21T07:12:51.696Z"
     },
     {
       "id": 1781923754093,
