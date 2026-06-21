@@ -23,6 +23,28 @@ export default function DashboardPage() {
   const [deadline, setDeadline] = useState('')
   const { user } = useUser()
 
+  const handleDeleteTask = async (id: number) => {
+    setLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch(`/api/tasks/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        setError('Ошибка удаление задачи')
+        return
+      }
+
+      setTasks((prev) => prev.filter((task) => task.id !== id))
+    } catch (err) {
+      setError('Ошибка соединения')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleLogout = async () => {
     try {
       const res = await fetch('/api/auth/logout', { method: 'POST' })
@@ -261,6 +283,12 @@ export default function DashboardPage() {
                             className="text-sm text-blue-600 hover:text-blue-800"
                           >
                             ✏️
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            🗑️
                           </button>
                         </div>
                       </div>

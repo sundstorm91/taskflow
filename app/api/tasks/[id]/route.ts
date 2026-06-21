@@ -1,5 +1,5 @@
 import { getUserId } from '@/lib/auth'
-import { createTask, getTasks, readDB, Task, writeDB } from '@/lib/db'
+import { getTasks, readDB, writeDB } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function PUT(request: NextRequest, {params} : {params: {id : string }}) {
