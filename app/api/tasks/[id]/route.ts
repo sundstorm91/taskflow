@@ -51,7 +51,47 @@ export async function PUT(request: NextRequest, {params} : {params: {id : string
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
     )
+    }
+}
 
+export async function DELETE(request: NextRequest, {params} : {params: {id : string }}) {
+
+    const { id } = await params
+    const userId = await getUserId(request)
+
+    if (!userId) {
+    return NextResponse.json(
+      { error: 'Пользователь не авторизован' },
+      { status: 401}
+    )
+  }
+
+  try {
+    const tasks = getTasks()
+    const taskIndex = tasks.findIndex(task => task.id === +(id) && task.userId === userId)
+
+    if (taskIndex === -1 ) {
+        return NextResponse.json(
+        { error: 'Задача не найдена' },
+        { status: 404 }
+      )
     }
 
+    tasks.splice(taskIndex, 1)
+
+    const db = readDB();
+
+    db.tasks = tasks
+
+    return NextResponse.json(
+      { tasks, message: 'Задача успешно Удалена сервером' },
+      { status: 200 }
+    )
+  } catch (err){
+     console.error('Ошибка передачи задачи сервером', err)
+    return NextResponse.json(
+      { error: 'Внутренняя ошибка сервера' },
+      { status: 500 }
+    )
+  }
 }
