@@ -9,6 +9,9 @@ import { Task } from '@/lib/db'
 
 export default function DashboardPage() {
   const router = useRouter()
+
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [tasks, setTasks] = useState<Task[]>([])
@@ -36,11 +39,11 @@ export default function DashboardPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setLoading(true) // ← включаем лоадер
+    setLoading(true)
 
     if (!user) {
       setError('Пользователь не авторизован')
-      setLoading(false) // ← сбрасываем
+      setLoading(false)
       return
     }
 
@@ -79,6 +82,36 @@ export default function DashboardPage() {
       }
     } catch {
       setTasks((prev) => prev.filter((task) => task.id !== optimisticTask.id))
+      setError('Ошибка соединения')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUpdateTask = async (updatedTask: Task) => {
+    setLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch(`/api/tasks/${updatedTask.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: updatedTask.title,
+          description: updatedTask.description,
+          status: updatedTask.status,
+          deadline: updatedTask.deadline,
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setTasks((prev) => prev.map((t) => (t.id === data.task.id ? data.task : t)))
+        setEditingTask(null)
+      } else {
+        setError('Ошибка обновления задачи')
+      }
+    } catch {
       setError('Ошибка соединения')
     } finally {
       setLoading(false)
@@ -157,7 +190,7 @@ export default function DashboardPage() {
         </form>
       </div>
 
-      {/* Список задач (заглушка) */}
+      {/* Список задач */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Список задач</h2>
         <div className="bg-white p-6 rounded-lg shadow-md">
@@ -167,19 +200,76 @@ export default function DashboardPage() {
             <ul className="space-y-4">
               {tasks.map((task: Task) => (
                 <li key={task.id} className="border-b pb-3 last:border-0">
-                  <div className="flex justify-between items-start">
+                  {editingTask?.id === task.id ? (
+                    // === РЕЖИМ РЕДАКТИРОВАНИЯ ===
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={editingTask.title}
+                        onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                        className="w-full p-2 border rounded text-sm"
+                        placeholder="Название"
+                      />
+                      <input
+                        type="text"
+                        value={editingTask.description || ''}
+                        onChange={(e) =>
+                          setEditingTask({ ...editingTask, description: e.target.value })
+                        }
+                        className="w-full p-2 border rounded text-sm"
+                        placeholder="Описание"
+                      />
+                      <select
+                        value={editingTask.status}
+                        onChange={(e) =>
+                          setEditingTask({
+                            ...editingTask,
+                            status: e.target.value as Task['status'],
+                          })
+                        }
+                        className="w-full p-2 border rounded text-sm"
+                      >
+                        <option value="pending">Ожидает</option>
+                        <option value="in-progress">В работе</option>
+                        <option value="completed">Выполнена</option>
+                      </select>
+                      <div className="flex gap-2 mt-2">
+                        <Button onClick={() => handleUpdateTask(editingTask)} disabled={loading}>
+                          {loading ? 'Сохранение...' : 'Сохранить'}
+                        </Button>
+                        <Button variant="secondary" onClick={() => setEditingTask(null)}>
+                          Отмена
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    // === РЕЖИМ ПРОСМОТРА ===
                     <div>
-                      <h3 className="font-semibold">{task.title}</h3>
-                      {task.description && (
-                        <p className="text-sm text-gray-600">{task.description}</p>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-semibold">{task.title}</h3>
+                          {task.description && (
+                            <p className="text-sm text-gray-600">{task.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <span className="text-xs px-2 py-1 rounded bg-gray-100 whitespace-nowrap">
+                            {task.status}
+                          </span>
+                          <button
+                            onClick={() => setEditingTask(task)}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            ✏️
+                          </button>
+                        </div>
+                      </div>
+                      {task.deadline && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Дедлайн: {new Date(task.deadline).toLocaleDateString()}
+                        </p>
                       )}
                     </div>
-                    <span className="text-xs px-2 py-1 rounded bg-gray-100">{task.status}</span>
-                  </div>
-                  {task.deadline && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Дедлайн: {new Date(task.deadline).toLocaleDateString()}
-                    </p>
                   )}
                 </li>
               ))}
