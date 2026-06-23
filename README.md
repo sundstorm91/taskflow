@@ -204,3 +204,149 @@ export async function POST(request: NextRequest) {
   }
 }
 ```
+
+## День 6 — Редактирование, удаление, статус, поиск
+
+Что сделано:
+Созданы API для обновления и удаления отдельных задач (PUT и DELETE), реализовано инлайн-редактирование на дашборде, добавлено переключение статуса, реализован клиентский поиск по задачам.
+
+С чем столкнулись:
+
+params как Promise в Next.js 15 — прямой доступ к params.id вызывает ошибку, нужно разворачивать через await
+
+Типизация params — правильное объявление: { params }: { params: { id: string } }, а не params: { id: string }
+
+Безопасность при обновлении/удалении — забывали проверять task.userId === userId, из-за чего пользователь мог редактировать чужие задачи
+
+findIndex и проверка на -1 — нельзя использовать if (!taskIndex), так как -1 — это truthy значение; только строгая проверка taskIndex === -1
+
+splice возвращает массив удалённых элементов — присваивали результат splice переменной и сохраняли в базу, из-за чего терялись все остальные задачи
+
+Обновление UI только при успешном ответе — обновляли список задач даже при ошибке сервера, что приводило к рассинхрону
+
+Поиск через API или на клиенте? — изначально думали отправлять запрос на сервер при каждом вводе, но выбрали клиентскую фильтрацию (быстрее и проще)
+
+Пустое состояние при поиске — если поиск ничего не находил, показывалось "Задач пока нет" вместо "Ничего не найдено"
+
+```typescript
+    // app/api/tasks/[id]/route.ts
+    import { getUserId } from '@/lib/auth'
+    import { getTasks, readDB, writeDB } from '@/lib/db'
+    import { NextRequest, NextResponse } from 'next/server'
+
+    // PUT — обновление задачи
+    export async function PUT(
+      request: NextRequest,
+      { params }: { params: Promise<{ id: string }> }
+    ) {
+      const userId = await getUserId(request)
+      if (!userId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+
+      try {
+        const { id } = await params
+        const body = await request.json()
+        const { title, description, status, deadline } = body
+
+        const tasks = getTasks()
+        const taskIndex = tasks.findIndex(
+          task => task.id === Number(id) && task.userId === userId
+        )
+
+        if (taskIndex === -1) {
+          return NextResponse.json({ error: 'Задача не найдена' }, { status: 404 })
+        }
+
+        const updatedTask = {
+          ...tasks[taskIndex],
+          title: title ?? tasks[taskIndex].title,
+          description: description !== undefined ? description : tasks[taskIndex].description,
+          status: status ?? tasks[taskIndex].status,
+          deadline: deadline !== undefined ? deadline : tasks[taskIndex].deadline,
+          updatedAt: new Date().toISOString(),
+        }
+
+        const db = readDB()
+        db.tasks[taskIndex] = updatedTask
+        writeDB(db)
+
+        return NextResponse.json(
+          { task: updatedTask, message: 'Задача обновлена' },
+          { status: 200 }
+        )
+      } catch (error) {
+        console.error('Ошибка обновления задачи:', error)
+        return NextResponse.json(
+          { error: 'Внутренняя ошибка сервера' },
+          { status: 500 }
+        )
+      }
+    }
+
+    // DELETE — удаление задачи
+    export async function DELETE(
+      request: NextRequest,
+      { params }: { params: Promise<{ id: string }> }
+    ) {
+      const userId = await getUserId(request)
+      if (!userId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+
+      try {
+        const { id } = await params
+        const tasks = getTasks()
+        const taskIndex = tasks.findIndex(
+          task => task.id === Number(id) && task.userId === userId
+        )
+
+        if (taskIndex === -1) {
+          return NextResponse.json({ error: 'Задача не найдена' }, { status: 404 })
+        }
+
+        tasks.splice(taskIndex, 1)
+        const db = readDB()
+        db.tasks = tasks
+        writeDB(db)
+
+        return NextResponse.json(
+          { message: 'Задача удалена' },
+          { status: 200 }
+        )
+      } catch (error) {
+        console.error('Ошибка удаления задачи:', error)
+        return NextResponse.json(
+          { error: 'Внутренняя ошибка сервера' },
+          { status: 500 }
+        )
+      }
+    }
+
+
+    // app/(dashboard)/page.tsx — клиентская фильтрация поиска
+    const [searchTerm, setSearchTerm] = useState('')
+
+    const filteredTasks = tasks.filter(
+      (task) =>
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+
+    // Инлайн-редактирование
+    {editingTask?.id === task.id ? (
+      // форма редактирования
+    ) : (
+      // обычный просмотр
+    )}
+```
+
+✅ Полный CRUD для задач (создание, чтение, обновление, удаление)
+
+✅ Безопасность на уровне API (проверка принадлежности задачи пользователю)
+
+✅ Инлайн-редактирование без перезагрузки страницы
+
+✅ Клиентский поиск по названию и описанию
+
+✅ Адаптация под Next.js 15 (асинхронный params)
