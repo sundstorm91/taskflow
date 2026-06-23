@@ -9,6 +9,7 @@ import { Task } from '@/lib/db'
 
 export default function DashboardPage() {
   const router = useRouter()
+  const [searchTerm, setSearchTerm] = useState('')
 
   const [editingTask, setEditingTask] = useState<Task | null>(null)
 
@@ -23,6 +24,11 @@ export default function DashboardPage() {
   const [deadline, setDeadline] = useState('')
   const { user } = useUser()
 
+  const filteredTasks = tasks.filter(
+    (task) =>
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
   const handleDeleteTask = async (id: number) => {
     setLoading(true)
     setError('')
@@ -38,7 +44,7 @@ export default function DashboardPage() {
       }
 
       setTasks((prev) => prev.filter((task) => task.id !== id))
-    } catch (err) {
+    } catch {
       setError('Ошибка соединения')
     } finally {
       setLoading(false)
@@ -215,12 +221,19 @@ export default function DashboardPage() {
       {/* Список задач */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Список задач</h2>
+        <input
+          type="text"
+          placeholder="🔍 Поиск задач..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
         <div className="bg-white p-6 rounded-lg shadow-md">
           {tasks.length === 0 ? (
             <p className="text-gray-500">Задач пока нет</p>
           ) : (
             <ul className="space-y-4">
-              {tasks.map((task: Task) => (
+              {filteredTasks.map((task: Task) => (
                 <li key={task.id} className="border-b pb-3 last:border-0">
                   {editingTask?.id === task.id ? (
                     // === РЕЖИМ РЕДАКТИРОВАНИЯ ===
