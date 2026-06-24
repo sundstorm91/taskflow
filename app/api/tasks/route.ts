@@ -1,20 +1,16 @@
 import { getUserId } from '@/lib/auth'
-import { createTask, getTasks, Task } from '@/lib/db'
+import { createTask, getTasksByUserId } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Проверяем авторизацию
     const userId = await getUserId(request)
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 2. Читаем данные задачи
-    const body: Omit<Task, 'id' | 'createdAt'> = await request.json()
-    const { title, status, deadline, description } = body
+    const { title, status, deadline, description } = await request.json()
 
-    // 3. Валидируем поля
     if (!title) {
       return NextResponse.json(
         { error: 'Поле title обязательно' },
@@ -22,18 +18,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Создаём задачу
-    const newTask = createTask({
+    const newTask = await createTask({
       title,
-      status,
-      userId,
+      status: status || 'pending',
       deadline,
       description,
+      userId,
     })
 
-    // 5. Возвращаем ответ
     return NextResponse.json(
-      { task: newTask, message: 'Добавление задачи: Успешно' },
+      { task: newTask, message: 'Задача создана' },
       { status: 201 }
     )
   } catch (error) {
@@ -45,19 +39,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
-
 export async function GET(request: NextRequest) {
   const userId = await getUserId(request)
 
   if (!userId) {
     return NextResponse.json(
       { error: 'Пользователь не авторизован' },
-      { status: 401}
+      { status: 401 }
     )
   }
 
   try {
-    const tasks = getTasks().filter(task => task.userId === userId)
+    const tasks = await getTasksByUserId(userId)
     return NextResponse.json(tasks, { status: 200 })
   } catch (error) {
     console.error('GET tasks error:', error)

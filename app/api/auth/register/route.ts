@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { findUserByMail, createUser } from '@/lib/db'
+import { findUserByEmail, createUser } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('1. Начало регистрации')
     const body = await request.json()
     const { email, password, name } = body
-
+    console.log('2. Тело запроса:', body)
     // 1. Проверка, что все поля заполнены
     if (!email || !password || !name) {
       return NextResponse.json(
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-
+    console.log('3. Данные извлечены')
     // 2. Проверка формата email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
@@ -33,7 +34,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Проверка, существует ли пользователь
-    const existingUser = findUserByMail(email)
+    const existingUser = await findUserByEmail(email)
+    console.log('5. Поиск пользователя выполнен')
     if (existingUser) {
       return NextResponse.json(
         { error: 'Пользователь с таким email уже существует' },
@@ -45,11 +47,12 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // 6. Создание пользователя
-    const newUser = createUser({
+    const newUser = await createUser({
       email,
       password: hashedPassword,
       name,
     })
+    console.log('7. Пользователь создан')
 
     // 7. Удаляем пароль из ответа
     const { password: _, ...userWithoutPassword } = newUser

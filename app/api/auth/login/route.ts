@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { findUserByMail } from '@/lib/db'
+import { findUserByEmail } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const user = findUserByMail(email)
+    const user = await findUserByEmail(email)
     if (!user) {
       return NextResponse.json(
         { error: 'Неверный email или пароль' },

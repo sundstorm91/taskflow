@@ -1,94 +1,86 @@
 import { getUserId } from '@/lib/auth'
-import { getTasks, readDB, writeDB } from '@/lib/db'
+import { getTaskById, updateTask, deleteTask } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function PUT(request: NextRequest, {params} : {params: {id : string }}) {
-    const { id } = await params
-    const userId = await getUserId(request)
-
-    if (!userId) {
-    return NextResponse.json(
-      { error: 'Пользователь не авторизован' },
-      { status: 401}
-    )
+// === PUT — обновление задачи ===
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const userId = await getUserId(request)
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
+    const { id } = await params
+    const taskId = Number(id)
 
     const body = await request.json()
     const { title, description, status, deadline } = body
-    const tasks = getTasks()
 
-    const taskIndex = tasks.findIndex(item => item.id === +(id) && item.userId === userId)
-
-    if (taskIndex === -1 ) {
-        return NextResponse.json(
-        { error: 'Задача не найдена' },
+    // Проверяем, существует ли задача
+    const existingTask = await getTaskById(taskId, userId)
+    if (!existingTask) {
+      return NextResponse.json(
+        { error: 'Задача не найдена или не принадлежит пользователю' },
         { status: 404 }
       )
     }
 
-  const updatedTask = {
-      ...tasks[taskIndex],
-      title: title ?? tasks[taskIndex].title,
-      description: description !== undefined ? description : tasks[taskIndex].description,
-      status: status ?? tasks[taskIndex].status,
-      deadline: deadline !== undefined ? deadline : tasks[taskIndex].deadline,
-      updatedAt: new Date().toISOString(),
-    }
+    // Обновляем задачу
+    const updatedTask = await updateTask(taskId, userId, {
+      title: title ?? existingTask.title,
+      description: description !== undefined ? description : existingTask.description,
+      status: status ?? existingTask.status,
+      deadline: deadline !== undefined ? deadline : existingTask.deadline,
+    })
 
-    const db = readDB()
-    db.tasks[taskIndex] = updatedTask
-    writeDB(db)
-
-  return NextResponse.json(
-      { task: updatedTask, message: 'Задача успешно передана сервером' },
+    return NextResponse.json(
+      { task: updatedTask, message: 'Задача обновлена' },
       { status: 200 }
     )
   } catch (error) {
-    console.error('Ошибка передачи задачи сервером', error)
+    console.error('Update task error:', error)
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
     )
-    }
+  }
 }
 
-export async function DELETE(request: NextRequest, {params} : {params: {id : string }}) {
-
-    const { id } = await params
-    const userId = await getUserId(request)
-
-    if (!userId) {
-    return NextResponse.json(
-      { error: 'Пользователь не авторизован' },
-      { status: 401}
-    )
+// === DELETE — удаление задачи ===
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const userId = await getUserId(request)
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const tasks = getTasks()
-    const taskIndex = tasks.findIndex(task => task.id === +(id) && task.userId === userId)
+    const { id } = await params
+    const taskId = Number(id)
 
-    if (taskIndex === -1 ) {
-        return NextResponse.json(
-        { error: 'Задача не найдена' },
+    // Проверяем, существует ли задача
+    const existingTask = await getTaskById(taskId, userId)
+    if (!existingTask) {
+      return NextResponse.json(
+        { error: 'Задача не найдена или не принадлежит пользователю' },
         { status: 404 }
       )
     }
 
-    tasks.splice(taskIndex, 1)
-
-    const db = readDB();
-
-    db.tasks = tasks
+    // Удаляем задачу
+    await deleteTask(taskId, userId)
 
     return NextResponse.json(
-      { tasks, message: 'Задача успешно Удалена сервером' },
+      { message: 'Задача удалена' },
       { status: 200 }
     )
-  } catch (err){
-     console.error('Ошибка передачи задачи сервером', err)
+  } catch (error) {
+    console.error('Delete task error:', error)
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
