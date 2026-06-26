@@ -438,3 +438,48 @@ Prisma → превращает их в JS-объекты
 ✅ Папка migrations/ с историей изменений
 ✅ Prisma Client готов к использованию
 ✅ БД синхронизирована со схемой
+
+## День 9 — Миграция на Prisma (продолжение)
+
+**С чем столкнулись при переходе на Prisma:**
+
+- **`params` как Promise в Next.js 15** — в API-роутах с динамическими параметрами нужно разворачивать через `await`, иначе ошибка.
+- **Путь к Prisma Client** — в `schema.prisma` указан кастомный `output = "../lib/generated/prisma"`, поэтому импорт типов идёт оттуда, а не из `@prisma/client`.
+- **Импорт PrismaClient** — в Prisma v7 импорт осуществляется из `@prisma/client/extension`, а не из корня `@prisma/client`.
+- **Адаптер для SQLite** — `@prisma/adapter-sqlite` не существует, правильный пакет — `prisma-adapter-sqlite` (требует Node.js v24+).
+- **Node.js версия** — `prisma-adapter-sqlite` требует Node.js v24 или выше; пришлось обновиться через `nvm-windows`.
+- **Конфликт версий `bcrypt` и `bcryptjs`** — хеши, созданные одной библиотекой, не проверяются другой; важно использовать одну библиотеку везде.
+
+**Ключевой код:**
+
+```typescript
+// lib/prisma.ts — настройка клиента с адаптером
+import { PrismaClient } from '../lib/generated/prisma/client'
+import { PrismaSqlite } from 'prisma-adapter-sqlite'
+
+const adapter = new PrismaSqlite({
+  url: process.env.DATABASE_URL!,
+})
+
+const globalForPrisma = global as unknown as { prisma: PrismaClient }
+
+const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    adapter,
+  })
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+
+export default prisma
+```
+
+Итог Дня 8 и 9:
+✅ Prisma установлен и настроен
+✅ Схема User и Task описана
+✅ Миграция создана и применена
+✅ Prisma Client сгенерирован
+✅ Адаптер для SQLite настроен
+✅ Все API-роуты переписаны на Prisma
+✅ JSON-файл удалён
+✅ Приложение работает с настоящей БД

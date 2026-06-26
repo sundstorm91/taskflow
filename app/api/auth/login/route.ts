@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { findUserByEmail } from '@/lib/db'
-import bcrypt from 'bcryptjs'
+import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET!
@@ -25,7 +25,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+console.log('Тип user.password:', typeof user.password)
+console.log('Тип password:', typeof password)
+console.log('Длина хеша:', user.password.length)
+
     const isPasswordValid = await bcrypt.compare(password, user.password)
+
     if (!isPasswordValid) {
       return NextResponse.json(
         { error: 'Неверный email или пароль' },

@@ -32,7 +32,7 @@ export async function createUser(data: {
 }) {
   /* const hashedPassword = await bcrypt.hash(data.password, 10) */
 
-  const hashedPassword = data.password // временно, без хеша
+  const hashedPassword = data.password
 
   return await prisma.user.create({
     data: {
